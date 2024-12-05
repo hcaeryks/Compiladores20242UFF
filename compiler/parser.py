@@ -259,12 +259,13 @@ class Parser():
                 base = Node("PEXP", [base, identifier])
         return base
     
+    # Tive que adicionar essa parada pra facilitar a vida
     def parse_BasePEXP(self):
         token = self.get_token()
         if token.token_type == "identifier":
             identifier = Node("identifier", [self.consume("identifier")])
             return Node("BasePEXP", [identifier])
-        elif token.token_type == "number":  # Add handling for numeric literals
+        elif token.token_type == "number":
             number = Node("number", [self.consume("number")])
             return Node("BasePEXP", [number])
         elif token.token_type == "reserved" and token.value == "this":

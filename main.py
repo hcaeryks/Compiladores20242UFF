@@ -6,7 +6,7 @@ def visualize_tree(node: Node, graph=None, parent=None):
     if graph is None:
         graph = Digraph()
 
-    graph.node(node.value)
+    graph.node(node.value, label=node.label)
 
     if parent:
         graph.edge(parent, node.value)

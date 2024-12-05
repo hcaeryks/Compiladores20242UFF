@@ -8,3 +8,7 @@ if __name__ == "__main__":
     lexer.tokenize()
 
     print(lexer.get_tokens())
+
+    parser = Parser(lexer.get_tokens())
+    stuff = parser.parse()
+    print(stuff)

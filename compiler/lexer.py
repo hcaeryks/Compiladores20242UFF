@@ -1,5 +1,6 @@
 from typing import List, Tuple, Iterator
-from .types import Token
+
+from .types import Token, TokenType
 import re
 
 class Lexer():
@@ -32,7 +33,7 @@ class Lexer():
             elif token_type == "erro":
                 raise SyntaxError(f"Token desconhecido: {token_value}")
             
-            self.tokens.append(Token(token_type, token_value))
+            self.tokens.append(Token(TokenType(token_type), token_value))
 
     def get_tokens(self) -> List[Token]:
         if not self.tokens:

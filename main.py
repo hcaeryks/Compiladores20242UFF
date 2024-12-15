@@ -34,4 +34,3 @@ if __name__ == "__main__":
 
     graph = visualize_tree(stuff)
     graph.render("aas", format="png", cleanup=True)
-    

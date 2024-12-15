@@ -54,12 +54,7 @@ class Parser():
         else:
             expected_desc = f"{expected_type} ('{expected_value}')" if expected_value else f"{expected_type}"
             raise Exception(f"Expected {expected_desc}, got {repr(token)} @ {self.index}")
-
-    def synchronize(self, follow_set):
-        """ Synchronize the parser if a token not in the follow set is encountered. """
-        while self.get_token() and self.get_token().value not in follow_set:
-            self.index += 1
-
+        
     def parse(self):
         return self.parse_PROG()
 

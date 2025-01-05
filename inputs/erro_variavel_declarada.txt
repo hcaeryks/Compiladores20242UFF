@@ -1,0 +1,16 @@
+class Main {
+    public static void main(String[] args) {
+        System.out.println(new Factorial().compute(5));
+    }
+}
+
+class Factorial {
+    public int compute(int n) {
+        if (n < 2) 
+            a = 1;
+         else 
+            a = 1;
+            return n * this.compute(n - 1);
+        
+    }
+}

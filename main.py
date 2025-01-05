@@ -1,4 +1,4 @@
-from compiler import Lexer, Parser
+from compiler import Lexer, Parser, Semantic
 from compiler.types import Node
 from graphviz import Digraph
 
@@ -19,7 +19,7 @@ def visualize_tree(node: Node, graph=None, parent=None):
     return graph
 
 if __name__ == "__main__":
-    with open("input.txt", "r") as file:
+    with open("./inputs/operacoes_constantes.txt", "r") as file:
         text = file.read()
     
     lexer = Lexer(text)
@@ -30,7 +30,10 @@ if __name__ == "__main__":
             token_file.write(f"{token}\n")
     
     parser = Parser(lexer.get_tokens())
-    stuff = parser.parse()
+    tree = parser.parse()
 
-    graph = visualize_tree(stuff)
+    graph = visualize_tree(tree)
     graph.render("aas", format="png", cleanup=True)
+
+    semantic = Semantic(tree)
+    semantic.validate_all()

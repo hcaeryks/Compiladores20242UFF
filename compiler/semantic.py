@@ -43,6 +43,8 @@ class Semantic():
             node.children.reverse()
         for child in node.children:
             self.dfs(child, validate_variables, validate_functions, replace_constants)
+        if node.label == "PROG":
+            node.children.reverse()
 
         if replace_constants: self.replace_constants(node)
 

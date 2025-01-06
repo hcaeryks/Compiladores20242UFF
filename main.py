@@ -1,4 +1,4 @@
-from compiler import Lexer, Parser, Semantic
+from compiler import Lexer, Parser, Semantic, CodeGen
 from compiler.types import Node
 from graphviz import Digraph
 
@@ -37,3 +37,6 @@ if __name__ == "__main__":
 
     semantic = Semantic(tree)
     semantic.validate_all()
+
+    codegen = CodeGen(tree)
+    print(codegen.generate_code())

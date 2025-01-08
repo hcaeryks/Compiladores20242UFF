@@ -316,9 +316,6 @@ class Parser():
         elif token.token_type == "number":
             self.index += 1
             return Node("NUM", [token.value])
-        elif token.token_type == "string":
-            self.index += 1
-            return Node("STRING", [token.value])
         elif token.token_type == "operator" and token.value == "(":
             self.index += 1
             exp = self.parse_EXP()

@@ -2,6 +2,7 @@
 aas.png
 tokenized.txt
 ref.txt
+output_code.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

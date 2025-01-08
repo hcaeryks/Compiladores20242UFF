@@ -1,0 +1,6 @@
+.data
+ad51abbf-002f-40ca-aa4f-3e58702283c3_addr: .word 0
+.text
+main:
+# ERROR @ CMD(identifier('a'), operator('='), SEXP(number('1')))
+    jr $ra

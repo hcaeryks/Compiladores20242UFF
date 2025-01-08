@@ -19,7 +19,7 @@ def visualize_tree(node: Node, graph=None, parent=None):
     return graph
 
 if __name__ == "__main__":
-    with open("./inputs/operacoes_constantes.txt", "r") as file:
+    with open("./inputs/exemplo_4.txt", "r") as file:
         text = file.read()
     
     lexer = Lexer(text)
@@ -32,11 +32,14 @@ if __name__ == "__main__":
     parser = Parser(lexer.get_tokens())
     tree = parser.parse()
 
-    graph = visualize_tree(tree)
-    graph.render("aas", format="png", cleanup=True)
+    #graph = visualize_tree(tree)
+    #graph.render("aas", format="png", cleanup=True)
 
     semantic = Semantic(tree)
     semantic.validate_all()
 
     codegen = CodeGen(tree)
-    print(codegen.generate_code())
+    generated_code = codegen.generate_code()
+    
+    with open("output_code.txt", "w") as code_file:
+        code_file.write(generated_code)

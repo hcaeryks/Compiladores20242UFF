@@ -14,13 +14,16 @@ class CodeGen():
         text = "\n".join(self.text_section)
         return f".data\n{data}\n.text\n{text}"
 
+    def yield_error(self, message: str, tree: Node) -> None:
+        self.text_section.append(f"# ERROR: {message} @ {tree}")
+
     def _cgen(self, tree: Node) -> None:
         if hasattr(self, f"assemble_{tree.label}"):
             func = getattr(self, f"assemble_{tree.label}")
             if callable(func):
                 func(tree)
         else:
-            self.text_section.append(f"# ERROR, assemble_{tree.label} function not found @ {tree}")
+            self.yield_error(f"assemble_{tree.label} function not found", tree)
 
     def assemble_PROG(self, tree: Node) -> None:
         for child in tree.children:
@@ -52,7 +55,7 @@ class CodeGen():
         self.text_section.append("\tjr $ra")
 
     def assemble_ASSIGN(self, tree: Node) -> None:
-        var_name = tree.children[0].value
+        var_name = tree.children[0].children[0]
         self._cgen(tree.children[2])
         self.text_section.append(f"\tsw $v0, {self.variables[var_name]}")
 
@@ -79,7 +82,7 @@ class CodeGen():
         self.text_section.append("\tmove $v0, $t0")
 
     def assemble_VAR(self, tree: Node) -> None:
-        var_name = tree.children[1].value
+        var_name = tree.children[1].children[0]
         self.variables[var_name] = f"{var_name}_addr"
         self.data_section.append(f"{var_name}_addr: .word 0")
 
@@ -116,7 +119,7 @@ class CodeGen():
                 self.text_section.append("\tsyscall")
         elif tree.children[0].label == "VAR":
             self.assemble_VAR(tree.children[0])
-        elif tree.children[0].label == "identifier" and tree.children[1].label == "operator" and tree.children[1].value == "=":
+        elif tree.children[0].label == "identifier" and tree.children[1].label == "operator" and tree.children[1].children[0] == "=":
             self.assemble_ASSIGN(tree)
         else:
             self.text_section.append(f"# ERROR @ {tree}")

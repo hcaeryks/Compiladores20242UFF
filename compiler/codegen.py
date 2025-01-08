@@ -94,7 +94,7 @@ class CodeGen():
 
     def assemble_STRING(self, tree: Node) -> None:
         label = f"str_{len(self.data_section)}"
-        self.data_section.append(f'{label}: .asciiz "{tree.value}"')
+        self.data_section.append(f'{label}: .asciiz {tree.children[0]}')
         self.text_section.append(f"\tla $a0, {label}")
         self.text_section.append("\tli $v0, 4")
         self.text_section.append("\tsyscall")

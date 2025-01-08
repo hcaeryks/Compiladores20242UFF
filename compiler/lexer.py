@@ -7,6 +7,7 @@ class Lexer():
         ("reserved", r'\b(boolean|class|extends|public|static|void|main|String|return|int|if|else|while|System\.out\.println|length|true|false|this|new|null)\b'),
         ("identifier", r'[a-zA-Z_][a-zA-Z0-9_]*'),
         ("number", r'\d+'),
+        ("string", r'"[^"]*"'),
         ("operator", r'==|!=|<=|>=|<|>|\+|-|\*|&&|!|='),
         ("punctuation", r'[(){}\[\];.,]'),
         ("whitespace", r'[ \t\r\f\n]+'),
@@ -40,4 +41,4 @@ class Lexer():
         return self.tokens
     
     def __iter__(self) -> Iterator[Token]:
-        return
+        return iter(self.get_tokens())

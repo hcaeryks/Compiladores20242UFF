@@ -69,6 +69,6 @@ class Semantic():
 
     def replace_constants(self, node: Node) -> None:
         if (node.label == "MEXP" or node.label == "AEXP") and not node.are_there_variables_involved():
-            self.replace_node(self.tree, node.value, Node("SEXP", [Node("number", [Token("number", str(node.evaluate_bottom_expression()))])]))
+            self.replace_node(self.tree, node.value, Node("SEXP", [Node("number", [str(node.evaluate_bottom_expression())])]))
         elif (node.label == "REXP" or node.label == "EXP") and not node.are_there_variables_involved():
-            self.replace_node(self.tree, node.value, Node("SEXP", [Node("reserved", [Token("reserved", str(node.evaluate_bottom_expression()))])]))
+            self.replace_node(self.tree, node.value, Node("SEXP", [Node("reserved", [str(node.evaluate_bottom_expression())])]))

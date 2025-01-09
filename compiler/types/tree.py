@@ -46,12 +46,13 @@ class Node():
     
     def get_direct_val(self, node: 'Node') -> int | bool:
         if node.children[0].label == "reserved":
-            return True if node.children[0].children[0].value == "true" else False
-        return int(node.children[0].children[0].value)
+            return True if node.children[0].children[0] == "true" else False
+        return int(node.children[0].children[0])
     
     def evaluate_bottom_expression(self) -> int | bool:
         if self.label == "AEXP" or self.label == "MEXP":
-            op = self.children[1].children[0].value
+            print(self)
+            op = self.children[1].children[0]
             if op == "+":
                 return self.get_direct_val(self.children[0]) + self.get_direct_val(self.children[2])
             elif op == "-":
@@ -59,7 +60,7 @@ class Node():
             elif op == "*":
                 return self.get_direct_val(self.children[0]) * self.get_direct_val(self.children[2])
         elif self.label == "REXP" or self.label == "EXP":
-            op = self.children[1].children[0].value
+            op = self.children[1].children[0]
             if op == "<":
                 return self.get_direct_val(self.children[0]) < self.get_direct_val(self.children[2])
             elif op == "==":

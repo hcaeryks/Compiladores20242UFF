@@ -78,7 +78,7 @@ class CodeGen():
         self.text_section.append("\tmove $v0, $t0")
 
     def assemble_NUM(self, tree: Node) -> None:
-        self.text_section.append(f"\tli $t0, {tree.value}")
+        self.text_section.append(f"\tli $t0, {tree.children[0]}")
         self.text_section.append("\tmove $v0, $t0")
 
     def assemble_VAR(self, tree: Node) -> None:
@@ -98,6 +98,22 @@ class CodeGen():
         self.text_section.append(f"\tla $a0, {label}")
         self.text_section.append("\tli $v0, 4")
         self.text_section.append("\tsyscall")
+
+    def assemble_SEXP(self, tree: Node) -> None:
+        if tree.children[0].label == "number":
+            self.assemble_NUM(tree.children[0])
+        elif tree.children[0].label == "identifier":
+            self.assemble_identifier(tree.children[0])
+        else:
+            self.yield_error(f"Unsupported SEXP type: {tree.children[0].label}", tree)
+
+    def assemble_PEXP(self, tree: Node) -> None:
+        if tree.children[0].label == "SEXP":
+            self.assemble_SEXP(tree.children[0])
+        elif tree.children[0].label == "LPAREN":
+            self._cgen(tree.children[1])  # Assuming the expression is the second child
+        else:
+            self.yield_error(f"Unsupported PEXP type: {tree.children[0].label}", tree)
 
     def assemble_identifier(self, tree: Node) -> None:
         var_name = tree.value

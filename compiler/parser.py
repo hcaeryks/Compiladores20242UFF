@@ -311,16 +311,30 @@ class Parser():
         print("Parsing PEXP")
         token = self.get_token()
         if token.token_type == "identifier":
-            self.index += 1
-            return Node("identifier", [token.value])
+            identifier = Node("identifier", [self.consume("identifier").value])
+            if self.get_token() and self.get_token().value == "(":
+                self.consume("punctuation", "(")
+                exps = self.parse_EXPS() if self.get_token().value != ")" else Node("EXPS", [])
+                self.consume("punctuation", ")")
+                return Node("PEXP", [identifier, exps], "method_call")
+            return identifier
         elif token.token_type == "number":
             self.index += 1
             return Node("NUM", [token.value])
-        elif token.token_type == "operator" and token.value == "(":
-            self.index += 1
+        elif token.token_type == "reserved" and token.value == "new":
+            self.consume("reserved", "new")
+            class_name = Node("identifier", [self.consume("identifier").value])
+            self.consume("punctuation", "(")
+            self.consume("punctuation", ")")
+            return Node("PEXP", [Node("reserved", ["new"]), class_name])
+        elif token.token_type == "reserved" and token.value == "this":
+            self.consume("reserved", "this")
+            return Node("PEXP", [Node("reserved", ["this"])])
+        elif token.token_type == "punctuation" and token.value == "(":
+            self.consume("punctuation", "(")
             exp = self.parse_EXP()
-            self.consume("operator", ")")
-            return exp
+            self.consume("punctuation", ")")
+            return Node("PEXP", [exp])
         else:
             raise Exception(f"Expected PEXP, got {repr(token)} @ {self.index}")
 

@@ -2,5 +2,7 @@ class Main {
     public static void main(String[] args) {
         int arroz;
         arroz = 1;
+        arroz = 2;
+        System.out.println(1);
     }
 }

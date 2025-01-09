@@ -269,13 +269,17 @@ class Parser():
         print("Parsing SEXP")
         token = self.get_token()
         if token.value == "!":
-            not_op = self.consume("operator", "!")
+            not_op = self.consume("operator", "!") # making our life easier
             sexp = self.parse_SEXP()
-            return Node("SEXP", [Node("operator", [not_op.value]), sexp])
+            op = sexp.children[0].children[0]
+            op = "false" if op == "true" else "true"
+            return Node("SEXP", [Node("boolean", [op])])
         elif token.value == "-":
-            min_op = self.consume("operator", "-")
+            min_op = self.consume("operator", "-") # making our life easier
             sexp = self.parse_SEXP()
-            return Node("SEXP", [Node("operator", [min_op.value]), sexp])
+            num = sexp.children[0].children[0]
+            num = int(num) * -1
+            return Node("SEXP", [Node("number", [str(num)])])
         elif token.value == "true":
             return Node("SEXP", [Node("reserved", [self.consume("reserved", "true").value])])
         elif token.value == "false":

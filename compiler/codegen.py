@@ -42,6 +42,15 @@ class CodeGen():
     def assemble_METODO(self, tree: Node) -> None:
         method_name = tree.children[1].children[0]
         self.text_section.append(f"{method_name}:")
+        
+        # Handle method parameters
+        params = tree.children[2].children
+        for i in range(0, len(params), 2):
+            param_type = params[i].children[0].children[0]
+            param_name = params[i + 1].children[0]
+            self.variables[param_name] = f"{param_name}_addr"
+            self.data_section.append(f"{param_name}_addr: .word 0")
+        
         for child in tree.children[3:]:
             self._cgen(child)
         self.text_section.append("\tjr $ra")

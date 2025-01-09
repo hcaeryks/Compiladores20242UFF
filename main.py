@@ -1,4 +1,7 @@
 from compiler import Lexer, Parser, Semantic, CodeGen
+from compiler.optimization import Optimizer
+from compiler.peephole_optmizer import PeepholeOptimizer
+from compiler.mips_bin_instructions import *
 from compiler.types import Node
 from graphviz import Digraph
 
@@ -19,7 +22,7 @@ def visualize_tree(node: Node, graph=None, parent=None):
     return graph
 
 if __name__ == "__main__":
-    with open("./inputs/exemplo_1.txt", "r") as file:
+    with open("./inputs/exemplo_3.txt", "r") as file:
         text = file.read()
     
     lexer = Lexer(text)
@@ -38,8 +41,19 @@ if __name__ == "__main__":
     semantic = Semantic(tree)
     semantic.validate_all()
 
-    codegen = CodeGen(tree)
+    optimizer = Optimizer(tree)
+    optimized_tree = optimizer.optimize()
+
+    codegen = CodeGen(optimized_tree)
     generated_code = codegen.generate_code()
+
+    peephole_optimizer = PeepholeOptimizer(generated_code)
+    optimized_code = peephole_optimizer.optimize()
     
     with open("output_code.txt", "w") as code_file:
-        code_file.write(generated_code)
+        code_file.write(optimized_code)
+    
+    binary_code = convert_to_binary(optimized_code)
+    
+    with open("output_code.bin", "w") as binary_file:
+        binary_file.write(binary_code)

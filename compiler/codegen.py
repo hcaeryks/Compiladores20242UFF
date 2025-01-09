@@ -33,7 +33,8 @@ class CodeGen():
         self.text_section.append("main:")
         for child in tree.children[2:]:
             self._cgen(child)
-        self.text_section.append("\tjr $ra")
+        self.text_section.append("\tli $v0, 10")
+        self.text_section.append("\tsyscall")
 
     def assemble_CLASSE(self, tree: Node) -> None:
         for child in tree.children[2:]:
@@ -87,8 +88,7 @@ class CodeGen():
         self.text_section.append("\tmove $v0, $t0")
 
     def assemble_NUM(self, tree: Node) -> None:
-        self.text_section.append(f"\tli $t0, {tree.children[0]}")
-        self.text_section.append("\tmove $v0, $t0")
+        self.text_section.append(f"\tli $v0, {tree.children[0]}")
 
     def assemble_VAR(self, tree: Node) -> None:
         var_name = tree.children[1].children[0]
@@ -136,9 +136,9 @@ class CodeGen():
             operator = tree.children[i].children[0]
             self._cgen(tree.children[i + 1])
             if operator == "+":
-                self.text_section.append("\tadd $t0, $t0, $v0")
+                self.text_section.append(f"\tadd $t0, $t0, $v0")
             elif operator == "-":
-                self.text_section.append("\tsub $t0, $t0, $v0")
+                self.text_section.append(f"\tsub $t0, $t0, $v0")
             self.text_section.append("\tmove $v0, $t0")
 
     def assemble_MEXP(self, tree: Node) -> None:
@@ -147,7 +147,7 @@ class CodeGen():
             operator = tree.children[i].children[0]
             self._cgen(tree.children[i + 1])
             if operator == "*":
-                self.text_section.append("\tmul $t0, $t0, $v0")
+                self.text_section.append(f"\tmul $t0, $t0, $v0")
             self.text_section.append("\tmove $v0, $t0")
 
     def assemble_SEXP(self, tree: Node) -> None:
@@ -198,8 +198,7 @@ class CodeGen():
     def assemble_identifier(self, tree: Node) -> None:
         var_name = tree.children[0]
         if var_name in self.variables:
-            self.text_section.append(f"\tlw $t0, {self.variables[var_name]}")
-            self.text_section.append("\tmove $v0, $t0")
+            self.text_section.append(f"\tlw $v0, {self.variables[var_name]}")
         else:
             self.text_section.append(f"# ERROR: Undefined variable {var_name}")
 

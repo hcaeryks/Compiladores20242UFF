@@ -12,7 +12,7 @@ class CodeGen():
         self._cgen(self.tree)
         data = "\n".join(self.data_section)
         text = "\n".join(self.text_section)
-        return f".data\n{data}\n.text\n{text}"
+        return f".data\n{data}\n.text\n.globl main\n{text}"
 
     def yield_error(self, message: str, tree: Node) -> None:
         self.text_section.append(f"# ERROR: {message} @ {tree}")
@@ -70,22 +70,22 @@ class CodeGen():
         self.text_section.append(f"\tsw $v0, {self.variables[var_name]}")
 
     def assemble_BINOP(self, tree: Node) -> None:
-        left_code = self._cgen(tree.children[0])
-        right_code = self._cgen(tree.children[1])
-        operator = tree.value
+        self._cgen(tree.children[0])
+        self.text_section.append("\tmove $t0, $v0")
+        self._cgen(tree.children[2])
+        operator = tree.children[1].children[0]
         if operator == "+":
-            self.text_section.append(f"\tadd $t0, {left_code}, {right_code}")
+            self.text_section.append(f"\tadd $v0, $t0, $v0")
         elif operator == "-":
-            self.text_section.append(f"\tsub $t0, {left_code}, {right_code}")
+            self.text_section.append(f"\tsub $v0, $t0, $v0")
         elif operator == "*":
-            self.text_section.append(f"\tmul $t0, {left_code}, {right_code}")
+            self.text_section.append(f"\tmul $v0, $t0, $v0")
         elif operator == "==":
-            self.text_section.append(f"\tseq $t0, {left_code}, {right_code}")
+            self.text_section.append(f"\tseq $v0, $t0, $v0")
         elif operator == "!=":
-            self.text_section.append(f"\tsne $t0, {left_code}, {right_code}")
+            self.text_section.append(f"\tsne $v0, $t0, $v0")
         elif operator == "<":
-            self.text_section.append(f"\tslt $t0, {left_code}, {right_code}")
-        self.text_section.append("\tmove $v0, $t0")
+            self.text_section.append(f"\tslt $v0, $t0, $v0")
 
     def assemble_NUM(self, tree: Node) -> None:
         self.text_section.append(f"\tli $v0, {tree.children[0]}")

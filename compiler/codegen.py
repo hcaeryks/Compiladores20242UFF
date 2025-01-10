@@ -129,7 +129,7 @@ class CodeGen():
         # Operação
         operator = tree.children[1].children[0]
         if operator == "+":
-            self.text_section.append("\tadd $v0, $t0, $t1")  # Soma $t0 + $t1
+            self.text_section.append("\tadd $v0, $t0, $t1")
         elif operator == "-":
             self.text_section.append("\tsub $v0, $t0, $t1")
         elif operator == "*":
@@ -174,17 +174,23 @@ class CodeGen():
                 self.text_section.append("\tmove $v0, $t0")
 
     def assemble_REXP(self, tree: Node) -> None:
+        # Primeiro valor
         self._cgen(tree.children[0])
+        self.text_section.append("\tmove $t0, $v0")  # Guarda primeiro valor
+        
         for i in range(1, len(tree.children), 2):
             operator = tree.children[i].children[0]
+            # Segundo valor
             self._cgen(tree.children[i + 1])
+            # Move para $t1 para comparação
+            self.text_section.append("\tmove $t1, $v0")
+            
             if operator == "<":
-                self.text_section.append("\tslt $t0, $t0, $v0")
+                self.text_section.append("\tslt $v0, $t0, $t1")
             elif operator == "==":
-                self.text_section.append("\tseq $t0, $t0, $v0")
+                self.text_section.append("\tseq $v0, $t0, $t1")
             elif operator == "!=":
-                self.text_section.append("\tsne $t0, $t0, $v0")
-            self.text_section.append("\tmove $v0, $t0")
+                self.text_section.append("\tsne $v0, $t0, $t1")
 
     def assemble_AEXP(self, tree: Node) -> None:
         # Primeiro valor
@@ -289,13 +295,31 @@ class CodeGen():
         if_block = tree.children[0].children[1]
         else_block = tree.children[1].children[0] if len(tree.children) > 1 and tree.children[1].label == "else" else None
 
+        label_num = len(self.text_section)  # Usa um número único para os labels
+        else_label = f"else_{label_num}"
+        end_label = f"end_if_{label_num}"
+
+        # Avalia a condição
         self._cgen(condition)
-        self.text_section.append("\tbeqz $v0, else_label")
+        self.text_section.append(f"\tbeqz $v0, {else_label}")
+        
+        # Bloco if
         self._cgen(if_block)
+        
         if else_block:
-            self.text_section.append("\tj end_if_label")
-            self.text_section.append("else_label:")
+            self.text_section.append(f"\tj {end_label}")
+            self.text_section.append(f"{else_label}:")
+            
+            # No caso do fatorial, precisamos:
+            # 1. Salvar num antes da chamada recursiva
+            self.text_section.append("\tlw $t2, num_addr")  # Guarda num em t2
+            # 2. Fazer a chamada recursiva
             self._cgen(else_block)
-            self.text_section.append("end_if_label:")
+            # 3. Multiplicar o resultado (em v0) pelo valor original de num
+            self.text_section.append("\tmul $v0, $v0, $t2")
+            # 4. Guardar em num_aux
+            self.text_section.append("\tsw $v0, num_aux_addr")
+            
+            self.text_section.append(f"{end_label}:")
         else:
-            self.text_section.append("else_label:")
+            self.text_section.append(f"{else_label}:")

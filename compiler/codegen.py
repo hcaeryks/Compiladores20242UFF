@@ -48,6 +48,12 @@ class CodeGen():
         method_name = tree.children[1].children[0]
         self.text_section.append(f"{method_name}:")
         
+        # Save return address and frame pointer
+        self.text_section.append("\taddi $sp, $sp, -8")  # Espaço para $ra e $fp
+        self.text_section.append("\tsw $ra, 4($sp)")     # Salva $ra
+        self.text_section.append("\tsw $fp, 0($sp)")     # Salva $fp
+        self.text_section.append("\tmove $fp, $sp")      # Atualiza $fp
+        
         # Handle method parameters
         params = tree.children[2].children
         for i in range(0, len(params), 2):
@@ -56,13 +62,42 @@ class CodeGen():
             self.variables[param_name] = f"{param_name}_addr"
             self.data_section.append(f"{param_name}_addr: .word 0")
         
+        # Load parameters from stack - ordem correta agora
+        if params:
+            param_count = len(params) // 2
+            for i in range(param_count):
+                param_name = params[2*i + 1].children[0]
+                # Ajustado o offset: 8 (saved regs) + 4 * posição
+                offset = 8 + 4 * (param_count - i - 1)
+                self.text_section.append(f"\tlw $t0, {offset}($fp)")
+                self.text_section.append(f"\tsw $t0, {self.variables[param_name]}")
+        
+        # Process method body
         for child in tree.children[3:]:
             self._cgen(child)
+        
+        # Restore return address and frame pointer
+        self.text_section.append("\tlw $ra, 4($fp)")     # Restaura $ra
+        self.text_section.append("\tlw $fp, 0($fp)")     # Restaura $fp
+        self.text_section.append("\taddi $sp, $sp, 8")   # Ajusta stack pointer
         self.text_section.append("\tjr $ra")
 
     def assemble_CALL(self, tree: Node) -> None:
+        # Evaluate and push arguments first
+        if len(tree.children) > 1:  # Se houver argumentos
+            args = tree.children[1].children
+            for arg in args:
+                self._cgen(arg)  # Gera código para avaliar o argumento
+                self.text_section.append("\taddi $sp, $sp, -4")
+                self.text_section.append("\tsw $v0, 0($sp)")
+        
         callee = tree.children[0].value
         self.text_section.append(f"\tjal {callee}")
+        
+        # Clean up stack after call
+        if len(tree.children) > 1:
+            args_count = len(tree.children[1].children)
+            self.text_section.append(f"\taddi $sp, $sp, {4 * args_count}")  # Limpa argumentos da stack
 
     def assemble_RETURN(self, tree: Node) -> None:
         self._cgen(tree.children[0])

@@ -33,8 +33,12 @@ class CodeGen():
         self.text_section.append("main:")
         for child in tree.children[2:]:
             self._cgen(child)
+
+        # Finaliza corretamente
         self.text_section.append("\tli $v0, 10")
         self.text_section.append("\tsyscall")
+
+
 
     def assemble_CLASSE(self, tree: Node) -> None:
         for child in tree.children[2:]:
@@ -65,27 +69,44 @@ class CodeGen():
         self.text_section.append("\tjr $ra")
 
     def assemble_ASSIGN(self, tree: Node) -> None:
-        var_name = tree.children[0].children[0]
-        self._cgen(tree.children[2])
-        self.text_section.append(f"\tsw $v0, {self.variables[var_name]}")
+        var_name = tree.children[0].children[0]  # Nome da variável
+        self._cgen(tree.children[2])             # Gera o valor a ser atribuído
+
+        # Depuração para rastrear atribuições
+        self.text_section.append(f"# Assigning to {var_name}")
+        if var_name in self.variables:
+            self.text_section.append(f"\tsw $v0, {self.variables[var_name]}")  # Armazena na variável
+        else:
+            self.yield_error(f"Undefined variable '{var_name}'", tree)
+
+
+
 
     def assemble_BINOP(self, tree: Node) -> None:
-        self._cgen(tree.children[0])
-        self.text_section.append("\tmove $t0, $v0")
-        self._cgen(tree.children[2])
+        # Primeiro operando
+        self._cgen(tree.children[0])  # Lado esquerdo
+        self.text_section.append("\tmove $t0, $v0")  # Move o valor para $t0
+
+        # Segundo operando
+        self._cgen(tree.children[2])  # Lado direito
+        self.text_section.append("\tmove $t1, $v0")  # Move o segundo valor para $t1
+
+        # Operação
         operator = tree.children[1].children[0]
         if operator == "+":
-            self.text_section.append(f"\tadd $v0, $t0, $v0")
+            self.text_section.append("\tadd $v0, $t0, $t1")  # Soma $t0 + $t1
         elif operator == "-":
-            self.text_section.append(f"\tsub $v0, $t0, $v0")
+            self.text_section.append("\tsub $v0, $t0, $t1")
         elif operator == "*":
-            self.text_section.append(f"\tmul $v0, $t0, $v0")
-        elif operator == "==":
-            self.text_section.append(f"\tseq $v0, $t0, $v0")
-        elif operator == "!=":
-            self.text_section.append(f"\tsne $v0, $t0, $v0")
-        elif operator == "<":
-            self.text_section.append(f"\tslt $v0, $t0, $v0")
+            self.text_section.append("\tmul $v0, $t0, $t1")
+
+
+        # Acumula em c_addr, se aplicável
+        #self.text_section.append("\tlw $t1, c_addr")  # Carrega valor atual de c_addr
+        #self.text_section.append("\tadd $t1, $t1, $v0")  # Soma com o valor novo
+        #self.text_section.append("\tsw $t1, c_addr")  # Salva de volta
+
+
 
     def assemble_NUM(self, tree: Node) -> None:
         self.text_section.append(f"\tli $v0, {tree.children[0]}")
@@ -131,15 +152,22 @@ class CodeGen():
             self.text_section.append("\tmove $v0, $t0")
 
     def assemble_AEXP(self, tree: Node) -> None:
+        # Primeiro valor
         self._cgen(tree.children[0])
+        self.text_section.append("\tmove $t0, $v0")  # Salva primeiro valor em $t0
+        
+        # Processa operadores e valores seguintes
         for i in range(1, len(tree.children), 2):
             operator = tree.children[i].children[0]
-            self._cgen(tree.children[i + 1])
+            self._cgen(tree.children[i + 1])  # Próximo valor em $v0
+            
             if operator == "+":
-                self.text_section.append(f"\tadd $t0, $t0, $v0")
+                self.text_section.append("\tadd $t0, $t0, $v0")
             elif operator == "-":
-                self.text_section.append(f"\tsub $t0, $t0, $v0")
-            self.text_section.append("\tmove $v0, $t0")
+                self.text_section.append("\tsub $t0, $t0, $v0")
+        
+        # Resultado final em $v0
+        self.text_section.append("\tmove $v0, $t0")
 
     def assemble_MEXP(self, tree: Node) -> None:
         self._cgen(tree.children[0])
@@ -200,7 +228,7 @@ class CodeGen():
         if var_name in self.variables:
             self.text_section.append(f"\tlw $v0, {self.variables[var_name]}")
         else:
-            self.text_section.append(f"# ERROR: Undefined variable {var_name}")
+            self.yield_error(f"Undefined variable {var_name}")
 
     def assemble_CMD(self, tree: Node) -> None:
         if tree.children[0].label == "System.out.println":

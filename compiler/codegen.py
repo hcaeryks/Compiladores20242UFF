@@ -118,7 +118,6 @@ class CodeGen():
     def assemble_CMD(self, tree: Node) -> None:
         if tree.children[0].label == "System.out.println":
             self._cgen(tree.children[0].children[0])
-            self.text_section.append("\tmove $a0, $v0")  # Only one move needed
             self.text_section.append("\tli $v0, 1")
             self.text_section.append("\tsyscall")
         elif tree.children[0].label == "CMD":

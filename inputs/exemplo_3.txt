@@ -1,7 +1,5 @@
 class Main {
     public static void main(String[] args) {
-        int arroz;
-        arroz = 1 + 1;
-        System.out.println(arroz);
+        System.out.println(2*2*2*2*3);
     }
 }

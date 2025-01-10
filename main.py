@@ -22,7 +22,7 @@ def visualize_tree(node: Node, graph=None, parent=None):
     return graph
 
 if __name__ == "__main__":
-    with open("./inputs/operacoes_constantes.txt", "r") as file:
+    with open("./inputs/exemplo_1.txt", "r") as file:
         text = file.read()
     
     lexer = Lexer(text)

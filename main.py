@@ -22,7 +22,7 @@ def visualize_tree(node: Node, graph=None, parent=None):
     return graph
 
 if __name__ == "__main__":
-    with open("./inputs/exemplo_4.txt", "r") as file:
+    with open("./inputs/exemplo_1.txt", "r") as file:
         text = file.read()
     
     lexer = Lexer(text)
@@ -53,7 +53,7 @@ if __name__ == "__main__":
     with open("output_code.txt", "w") as code_file:
         code_file.write(optimized_code)
     
-    binary_code = convert_to_binary(optimized_code)
+    #binary_code = convert_to_binary(optimized_code)
     
-    with open("output_code.bin", "w") as binary_file:
-        binary_file.write(binary_code)
+    #with open("output_code.bin", "w") as binary_file:
+    #    binary_file.write(binary_code)

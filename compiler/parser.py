@@ -45,7 +45,6 @@ class Parser():
 
     def consume(self, expected_type: str, expected_value: str = None) -> Token:
         token = self.get_token()
-        print(f"Consuming token: {token}")
         if token and token.token_type == expected_type and (expected_value is None or token.value == expected_value):
             self.index += 1
             return token
@@ -57,7 +56,6 @@ class Parser():
         return self.parse_PROG()
 
     def parse_PROG(self):
-        print("Parsing PROG")
         if self.get_token() and self.get_token().value in self.first["PROG"]:
             main = self.parse_MAIN()
             classes = []
@@ -68,7 +66,6 @@ class Parser():
             raise Exception("Invalid start of program")
 
     def parse_MAIN(self):
-        print("Parsing MAIN")
         self.consume("reserved", "class")
         class_name = Node("identifier", [self.consume("identifier").value])
         self.consume("punctuation", "{")
@@ -91,7 +88,6 @@ class Parser():
         return Node("MAIN", [class_name, parameter] + commands)
 
     def parse_CLASSE(self):
-        print("Parsing CLASSE")
         self.consume("reserved", "class")
         class_name = Node("identifier", [self.consume("identifier").value])
         parent = None
@@ -109,7 +105,6 @@ class Parser():
         return Node("CLASSE", [class_name, parent] + variables + methods)
 
     def parse_METODO(self):
-        print("Parsing METODO")
         self.consume("reserved", "public")
         tipo = self.parse_TIPO()
         method_name = Node("identifier", [self.consume("identifier").value])
@@ -130,7 +125,6 @@ class Parser():
         return Node("METODO", [tipo, method_name, params] + variables + commands + [exp])
 
     def parse_PARAMS(self):
-        print("Parsing PARAMS")
         params = []
         if self.get_token() and self.get_token().value in self.first["TIPO"]:
             params.append(self.parse_TIPO())
@@ -142,14 +136,12 @@ class Parser():
         return Node("PARAMS", params)
 
     def parse_VAR(self):
-        print("Parsing VAR")
         tipo = self.parse_TIPO()
         var_name = Node("identifier", [self.consume("identifier").value])
         self.consume("punctuation", ";")
         return Node("VAR", [tipo, var_name])
 
     def parse_TIPO(self):
-        print("Parsing TIPO")
         token = self.get_token()
         if token.value == "int":
             self.consume("reserved", "int")
@@ -169,7 +161,6 @@ class Parser():
         
 
     def parse_CMD(self):
-        print("Parsing CMD")
         token = self.get_token()
         if not token:
             return None
@@ -206,9 +197,6 @@ class Parser():
             self.consume("punctuation", ")")
             self.consume("punctuation", ";")
             return Node("CMD", [Node("System.out.println", [exp])])
-        elif token.token_type == "reserved" and token.value in {"int", "boolean"}:
-            var_decl = self.parse_VAR()
-            return Node("CMD", [var_decl])
         elif token.token_type == "identifier":
             identifier = Node("identifier", [self.consume("identifier").value])
             if self.get_token() and self.get_token().value == "=":
@@ -230,7 +218,6 @@ class Parser():
             raise Exception(f"Unexpected token {repr(token)}")
         
     def parse_EXP(self):
-        print("Parsing EXP")
         left = self.parse_REXP()
         while self.get_token() and self.get_token().value == "&&":
             and_op = self.consume("operator", "&&")
@@ -239,7 +226,6 @@ class Parser():
         return left
 
     def parse_REXP(self):
-        print("Parsing REXP")
         left = self.parse_AEXP()
         while self.get_token() and self.get_token().value in ["<", "==", "!="]:
             operator = Node("operator", [self.consume("operator").value])
@@ -248,7 +234,6 @@ class Parser():
         return left
 
     def parse_AEXP(self):
-        print("Parsing AEXP")
         left = self.parse_MEXP()
         while self.get_token() and self.get_token().value in ["+", "-"]:
             operator = Node("operator", [self.consume("operator").value])
@@ -257,7 +242,6 @@ class Parser():
         return left
 
     def parse_MEXP(self):
-        print("Parsing MEXP")
         left = self.parse_SEXP()
         while self.get_token() and self.get_token().value == "*":
             operator = Node("operator", [self.consume("operator").value])
@@ -266,7 +250,6 @@ class Parser():
         return left
 
     def parse_SEXP(self):
-        print("Parsing SEXP")
         token = self.get_token()
         if token.value == "!":
             not_op = self.consume("operator", "!") # making our life easier
@@ -312,7 +295,6 @@ class Parser():
             return pexp
 
     def parse_PEXP(self):
-        print("Parsing PEXP")
         token = self.get_token()
         if token.token_type == "identifier":
             identifier = Node("identifier", [self.consume("identifier").value])
@@ -324,7 +306,7 @@ class Parser():
             return identifier
         elif token.token_type == "number":
             self.index += 1
-            return Node("NUM", [token.value])
+            return Node("number", [token.value])
         elif token.token_type == "reserved" and token.value == "new":
             self.consume("reserved", "new")
             class_name = Node("identifier", [self.consume("identifier").value])
@@ -343,7 +325,6 @@ class Parser():
             raise Exception(f"Expected PEXP, got {repr(token)} @ {self.index}")
 
     def parse_EXPS(self):
-        print("Parsing EXPS")
         exps = [self.parse_EXP()]
         while self.get_token() and self.get_token().value == ",":
             self.consume("punctuation", ",")

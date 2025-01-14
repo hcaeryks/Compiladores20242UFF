@@ -1,7 +1,7 @@
 from compiler import Lexer, Parser, Semantic, CodeGen
 from compiler.optimization import Optimizer
 from compiler.peephole_optmizer import PeepholeOptimizer
-from compiler.mips_bin_instructions import *
+from compiler.MIPSAssembler import MIPSAssembler
 from compiler.types import Node
 from graphviz import Digraph
 
@@ -53,7 +53,9 @@ if __name__ == "__main__":
     with open("output_code.txt", "w") as code_file:
         code_file.write(optimized_code)
     
-    #binary_code = convert_to_binary(optimized_code)
-    
-    #with open("output_code.bin", "w") as binary_file:
-    #    binary_file.write(binary_code)
+    assembler = MIPSAssembler()
+    machine_code = assembler.assemble_file('output_code.txt')
+
+    with open('output.bin', 'wb') as f:
+        for code in machine_code:
+            f.write(code.to_bytes(4, byteorder='big'))

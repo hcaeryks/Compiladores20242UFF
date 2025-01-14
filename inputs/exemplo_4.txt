@@ -1,0 +1,14 @@
+class Main {
+    public static void main(String[] args) {
+        if(0){
+            System.out.println(5);
+        }
+        System.out.println(3);
+    }
+}
+
+class Calculator {
+    public int add(int a, int b) {
+       return a + b;
+    }
+}

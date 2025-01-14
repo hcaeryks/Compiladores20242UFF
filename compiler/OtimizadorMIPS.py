@@ -8,7 +8,7 @@ class OtimizadorMIPS:
         self.rotulos = set()
         self.referencias_rotulos = defaultdict(int)
         self.alvos_salto = set()
-        self.funcoes = set()  # Track function labels
+        self.funcoes = set()  
         
     def analisar_instrucao(self, linha):
         """Analisa uma instrução em seus componentes"""
@@ -16,24 +16,20 @@ class OtimizadorMIPS:
         if not linha or linha.startswith('#'):
             return None
             
-        # Preserve directives
         if linha.startswith('.'):
             return {'tipo': 'diretiva', 'original': linha}
             
-        # Handle labels
         if ':' in linha:
             rotulo = linha.split(':')[0].strip()
             self.rotulos.add(rotulo)
-            if '.' in rotulo:  # Function labels like Fac.ComputeFac
+            if '.' in rotulo: 
                 self.funcoes.add(rotulo)
             return {'tipo': 'rotulo', 'rotulo': rotulo}
             
-        # Remove comments
         linha = linha.split('#')[0].strip()
         if not linha:
             return None
             
-        # Parse instruction
         partes = re.split(r'[\s,]+', linha)
         return {
             'tipo': 'instrucao',
@@ -46,10 +42,8 @@ class OtimizadorMIPS:
         """Aplica otimizações preservando a semântica do programa"""
         instrucoes = codigo.split('\n')
         
-        # Build initial analysis
         self.analisar_programa(instrucoes)
         
-        # Apply safe optimizations
         instrucoes = self.remover_codigo_morto(instrucoes)
         instrucoes = self.dobramento_constantes(instrucoes)
         instrucoes = self.reducao_forca(instrucoes)
@@ -71,13 +65,12 @@ class OtimizadorMIPS:
                 continue
                 
             if parsed['tipo'] == 'rotulo':
-                if '.' in parsed['rotulo']:  # Function labels
+                if '.' in parsed['rotulo']:  
                     self.funcoes.add(parsed['rotulo'])
             elif parsed['tipo'] == 'instrucao':
                 op = parsed['op']
                 args = parsed['args']
                 
-                # Track jumps and branches
                 if op in ['j', 'jal', 'beq', 'bne', 'beqz', 'bnez']:
                     if len(args) > 0:
                         target = args[-1]
@@ -96,12 +89,10 @@ class OtimizadorMIPS:
                 codigo_vivo.append(instr)
                 continue
                 
-            # Always keep directives
             if parsed['tipo'] == 'diretiva':
                 codigo_vivo.append(instr)
                 continue
                 
-            # Handle labels
             if parsed['tipo'] == 'rotulo':
                 rotulo = parsed['rotulo']
                 if rotulo in self.funcoes or rotulo == 'main':
@@ -110,7 +101,6 @@ class OtimizadorMIPS:
                 codigo_vivo.append(instr)
                 continue
                 
-            # Keep all instructions in functions and main
             if em_funcao or parsed['tipo'] == 'instrucao' and parsed['op'] in ['jal', 'jr', 'syscall']:
                 codigo_vivo.append(instr)
                 if parsed['op'] == 'jr' and parsed['args'][0] == '$ra':
@@ -120,7 +110,7 @@ class OtimizadorMIPS:
         return codigo_vivo
 
     def dobramento_constantes(self, instrucoes):
-        """Realiza dobramento de constantes de forma segura"""
+        """Realiza dobramento de constantes"""
         otimizado = []
         self.valores_registradores.clear()
         
@@ -130,7 +120,6 @@ class OtimizadorMIPS:
                 otimizado.append(instr)
                 continue
                 
-            # Only optimize simple arithmetic with immediates
             if parsed['op'] == 'li' and len(parsed['args']) == 2:
                 try:
                     valor = int(parsed['args'][1])
@@ -138,7 +127,6 @@ class OtimizadorMIPS:
                 except ValueError:
                     pass
                     
-            # Clear register value on modification
             if len(parsed['args']) > 0:
                 self.valores_registradores.pop(parsed['args'][0], None)
                 
@@ -159,11 +147,10 @@ class OtimizadorMIPS:
             op = parsed['op']
             args = parsed['args']
             
-            # Optimize multiplication by powers of 2
             if op == 'mul' and len(args) == 3:
                 try:
                     value = int(args[2])
-                    if value > 0 and (value & (value - 1)) == 0:  # Is power of 2
+                    if value > 0 and (value & (value - 1)) == 0: 
                         shift = value.bit_length() - 1
                         otimizado.append(f"sll {args[0]}, {args[1]}, {shift}")
                         continue
@@ -184,7 +171,6 @@ class OtimizadorMIPS:
                 otimizado.append(instr)
                 continue
                 
-            # Only remove obvious redundant moves
             if parsed['op'] == 'move' and len(parsed['args']) == 2:
                 if parsed['args'][0] == parsed['args'][1]:
                     continue
@@ -206,7 +192,6 @@ class OtimizadorMIPS:
             op = parsed['op']
             args = parsed['args']
             
-            # Only remove obvious no-op instructions
             if op == 'add' and len(args) == 3 and args[2] == '$zero' and args[0] == args[1]:
                 continue
             if op == 'sub' and len(args) == 3 and args[2] == '$zero' and args[0] == args[1]:

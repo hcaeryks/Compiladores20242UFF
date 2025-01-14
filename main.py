@@ -22,7 +22,7 @@ def visualize_tree(node: Node, graph=None, parent=None):
     return graph
 
 if __name__ == "__main__":
-    with open("./inputs/exemplo_1.txt", "r") as file:
+    with open("./inputs/exemplo_4.txt", "r") as file:
         text = file.read()
     
     lexer = Lexer(text)
@@ -46,6 +46,7 @@ if __name__ == "__main__":
 
     codegen = CodeGen(optimized_tree)
     generated_code = codegen.generate_code()
+    print(codegen.arrays)
 
     peephole_optimizer = PeepholeOptimizer(generated_code)
     optimized_code = peephole_optimizer.optimize()

@@ -51,7 +51,6 @@ class Node():
     
     def evaluate_bottom_expression(self) -> int | bool:
         if self.label == "AEXP" or self.label == "MEXP":
-            print(self)
             op = self.children[1].children[0]
             if op == "+":
                 return self.get_direct_val(self.children[0]) + self.get_direct_val(self.children[2])

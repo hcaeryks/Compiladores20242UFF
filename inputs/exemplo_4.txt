@@ -1,0 +1,15 @@
+class Main {
+    public static void main(String[] args) {
+        System.out.println(new Calculator().add(10, 20));
+    }
+}
+
+class Calculator {
+    public int add(int a, int b) {
+        int[] c;
+        c = new int[2];
+        c[0] = a;
+        c[1] = b;
+        return c[0] + c[1];
+    }
+}

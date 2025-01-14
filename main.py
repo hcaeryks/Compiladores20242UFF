@@ -56,6 +56,11 @@ if __name__ == "__main__":
     assembler = MIPSAssembler()
     machine_code = assembler.assemble_file('output_code.txt')
 
+    # Printar codigo de maquina em formato hexadecimal
+    print("Codigo de maquina:")
+    for i, code in enumerate(machine_code):
+        print(f"0x{code:08x}")
+
     with open('output.bin', 'wb') as f:
         for code in machine_code:
             f.write(code.to_bytes(4, byteorder='big'))

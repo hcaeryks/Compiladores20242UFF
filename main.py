@@ -1,7 +1,6 @@
 from compiler import Lexer, Parser, Semantic, CodeGen
-from compiler.optimization import Optimizer
-from compiler.peephole_optmizer import PeepholeOptimizer
 from compiler.MIPSAssembler import MIPSAssembler
+from compiler.OtimizadorMIPS import OtimizadorMIPS
 from compiler.types import Node
 from graphviz import Digraph
 
@@ -22,7 +21,7 @@ def visualize_tree(node: Node, graph=None, parent=None):
     return graph
 
 if __name__ == "__main__":
-    with open("./inputs/exemplo_1.txt", "r") as file:
+    with open("./inputs/exemplo_3.txt", "r") as file:
         text = file.read()
     
     lexer = Lexer(text)
@@ -41,25 +40,23 @@ if __name__ == "__main__":
     semantic = Semantic(tree)
     semantic.validate_all()
 
-    optimizer = Optimizer(tree)
-    optimized_tree = optimizer.optimize()
-
-    codegen = CodeGen(optimized_tree)
+    codegen = CodeGen(tree)
     generated_code = codegen.generate_code()
-
-    peephole_optimizer = PeepholeOptimizer(generated_code)
-    optimized_code = peephole_optimizer.optimize()
     
+    # Saida original MIPS
     with open("output_code.txt", "w") as code_file:
-        code_file.write(optimized_code)
+        code_file.write(generated_code)
     
-    assembler = MIPSAssembler()
-    machine_code = assembler.assemble_file('output_code.txt')
+    # Codigo MIPS otimizado
+    otimizador = OtimizadorMIPS()
+    codigo_otimizado = otimizador.otimizar(generated_code)
+    
+    with open('optimized_code.txt', 'w') as f:
+        f.write(codigo_otimizado)
 
-    # Printar codigo de maquina em formato hexadecimal
-    print("Codigo de maquina:")
-    for i, code in enumerate(machine_code):
-        print(f"0x{code:08x}")
+    # Codigo de maquina
+    assembler = MIPSAssembler()
+    machine_code = assembler.assemble_file('optimized_code.txt')
 
     with open('output.bin', 'wb') as f:
         for code in machine_code:

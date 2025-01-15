@@ -1,4 +1,4 @@
-import re
+import re, os
 
 class MIPSAssembler:
     def __init__(self):
@@ -177,7 +177,7 @@ class MIPSAssembler:
 
     def assemble_file(self, filename):
         """Arquivo Assembly MIPS para codigo de maquina"""
-        with open(filename, 'r') as f:
+        with open(os.path.join("./out", filename), 'r') as f:
             lines = f.readlines()
             
         # Primeira passada para coletar labels
@@ -194,7 +194,7 @@ class MIPSAssembler:
 
 def main():
     assembler = MIPSAssembler()
-    machine_code = assembler.assemble_file('output_code.txt')
+    machine_code = assembler.assemble_file(os.path.join("./out", 'output_code.txt'))
     
     # Printar codigo de maquina em formato hexadecimal
     print("Codigo de maquina:")
@@ -202,7 +202,7 @@ def main():
         print(f"0x{code:08x}")
         
     # Salvando para arquivo binario
-    with open('output.bin', 'wb') as f:
+    with open(os.path.join("./out", 'output.bin'), 'wb') as f:
         for code in machine_code:
             f.write(code.to_bytes(4, byteorder='big'))
 

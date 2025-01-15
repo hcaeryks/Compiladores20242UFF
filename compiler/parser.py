@@ -211,7 +211,7 @@ class Parser():
                 self.consume("operator", "=")
                 value_exp = self.parse_EXP()
                 self.consume("punctuation", ";")
-                return Node("CMD", [identifier, index_exp, Node("operator", ["="]), value_exp])
+                return Node("CMD", [identifier, index_exp, Node("operator", ["="]), value_exp], "array_assign")
             else:
                 raise Exception("Invalid CMD structure")
         else:
@@ -279,19 +279,31 @@ class Parser():
             self.consume("punctuation", "[")
             exp = self.parse_EXP()
             self.consume("punctuation", "]")
-            return Node("SEXP", [Node("reserved", ["new"]), Node("reserved", ["int"]), exp])
+            return Node("SEXP", [Node("reserved", ["new"]), Node("reserved", ["int"]), exp], "array_init")
         else:
             pexp = self.parse_PEXP()
-            while self.get_token() and self.get_token().value == ".":
-                self.consume("punctuation", ".")
-                identifier = Node("identifier", [self.consume("identifier").value])
-                if self.get_token() and self.get_token().value == "(":
-                    self.consume("punctuation", "(")
-                    exps = self.parse_EXPS() if self.get_token().value != ")" else Node("EXPS", [])
-                    self.consume("punctuation", ")")
-                    pexp = Node("PEXP", [pexp, identifier, exps], "method_call")
+            while self.get_token():
+                if self.get_token().value == ".":
+                    self.consume("punctuation", ".")
+                    if self.get_token().value == "length":
+                        self.consume("identifier", "length")
+                        pexp = Node("PEXP", [pexp, Node("identifier", ["length"])])
+                    else:
+                        identifier = Node("identifier", [self.consume("identifier").value])
+                        if self.get_token().value == "(":
+                            self.consume("punctuation", "(")
+                            exps = self.parse_EXPS() if self.get_token().value != ")" else Node("EXPS", [])
+                            self.consume("punctuation", ")")
+                            pexp = Node("PEXP", [pexp, identifier, exps], "method_call")
+                        else:
+                            pexp = Node("PEXP", [pexp, identifier])
+                elif self.get_token().value == "[":
+                    self.consume("punctuation", "[")
+                    exp = self.parse_EXP()
+                    self.consume("punctuation", "]")
+                    pexp = Node("PEXP", [pexp, exp], "array_access")
                 else:
-                    pexp = Node("PEXP", [pexp, identifier])
+                    break
             return pexp
 
     def parse_PEXP(self):

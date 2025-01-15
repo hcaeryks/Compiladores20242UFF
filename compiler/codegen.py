@@ -13,6 +13,8 @@ class CodeGen():
         self.current_scope_max_offset_params = {}
         self.current_scope_max_offset = {}
         self.global_label_counter = 0
+        self.arrays = {}
+        self.next_array_register = 3
 
     def generate_code(self) -> str:
         self._cgen(self.tree)
@@ -152,8 +154,28 @@ class CodeGen():
             self._cgen(tree.children[0].children[1])
             self.text_section.append(f"\tb while{cnt1}")
             self.text_section.append(f"end_while{cnt2}:")
+        elif len(tree.children) == 3 and tree.children[2].type == "array_init":
+            self._cgen(tree.children[2].children[2])
+            self.arrays[tree.children[0].children[0]] = self.next_array_register
+            self.next_array_register += 1
+
+            self.text_section.append("\tsll $a0, $a0, 2")
+            self.text_section.append("\tli $v0, 9")
+            self.text_section.append("\tsyscall")
+            self.text_section.append(f"\tmove $t{self.arrays[tree.children[0].children[0]]}, $v0")
+        elif len(tree.children) == 4 and tree.type == "array_assign":
+            base = self.arrays[tree.children[0].children[0]]
+            self._cgen(tree.children[1])
+            self.text_section.append("\tadd $a0, $a0, $a0")
+            self.text_section.append("\tadd $a0, $a0, $a0")
+            self.text_section.append("\tsw $a0, 0($sp)")
+            self.text_section.append("\taddiu $sp, $sp, -4")
+            self._cgen(tree.children[3])
+            self.text_section.append("\tlw $t0, 4($sp)")
+            self.text_section.append("\taddiu $sp, $sp, 4")
+            self.text_section.append(f"\taddu $t1, $t0, $t{base}")
+            self.text_section.append("\tsw $a0, 0($t1)")
         elif tree.children[0].label == "identifier" and len(tree.children) == 3:
-            # Handle assignment
             self._cgen(tree.children[2])
             name = tree.children[0].children[0]
             scope = self.current_scope.split('.')
@@ -161,11 +183,7 @@ class CodeGen():
                 offset = self.variables[scope[0]][scope[1]][name]
                 self.text_section.append(f"\tsw $a0, {offset}($fp)")
             else:
-                # Global variable case remains the same
                 self.text_section.append(f"\tsw $a0, {self.variables[self.current_scope][name]}")
-        else:
-            # CASO ARRAY
-            pass
         
 
     def assemble_identifier(self, tree: Node) -> None:
@@ -237,7 +255,16 @@ class CodeGen():
         if len(tree.children) == 1 and tree.children[0].label == "PEXP":
             self._cgen(tree.children[0])
             return
-        
+
+        if tree.children[0].label == "identifier" and len(tree.children) == 2:
+            base = self.arrays[tree.children[0].children[0]]
+            self._cgen(tree.children[1])
+            self.text_section.append("\tsll $a0, $a0, 2")
+            self.text_section.append(f"\tadd $t0, $a0, $t{base}")
+            self.text_section.append("\tlw $a0, 0($t0)")
+                
+            return
+
         if tree.type == "method_call":
             whereweat = None
             if len(tree.children[0].children) == 1:  # caso this

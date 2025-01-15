@@ -1,9 +1,6 @@
 # Project-specific bullshit
 aas.png
-tokenized.txt
-ref.txt
-output_code.txt
-output_code.bin
+out/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

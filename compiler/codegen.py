@@ -14,6 +14,7 @@ class CodeGen():
         self.current_scope_max_offset = {}
         self.global_label_counter = 0
         self.arrays = {}
+        self.arrays_size = {}
         self.next_array_register = 3
 
     def generate_code(self) -> str:
@@ -255,6 +256,9 @@ class CodeGen():
         if len(tree.children) == 1 and tree.children[0].label == "PEXP":
             self._cgen(tree.children[0])
             return
+
+        if tree.type == "array_length":
+            pass
 
         if tree.children[0].label == "identifier" and len(tree.children) == 2:
             base = self.arrays[tree.children[0].children[0]]

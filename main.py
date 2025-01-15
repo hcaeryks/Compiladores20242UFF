@@ -1,7 +1,6 @@
 from compiler import Lexer, Parser, Semantic, CodeGen
-from compiler.optimization import Optimizer
-from compiler.peephole_optmizer import PeepholeOptimizer
-from compiler.mips_bin_instructions import *
+from compiler.MIPSAssembler import MIPSAssembler
+from compiler.OtimizadorMIPS import OtimizadorMIPS
 from compiler.types import Node
 from graphviz import Digraph
 
@@ -41,20 +40,24 @@ if __name__ == "__main__":
     semantic = Semantic(tree)
     semantic.validate_all()
 
-    optimizer = Optimizer(tree)
-    optimized_tree = optimizer.optimize()
-
-    codegen = CodeGen(optimized_tree)
+    codegen = CodeGen(tree)
     generated_code = codegen.generate_code()
-    print(codegen.arrays)
-
-    peephole_optimizer = PeepholeOptimizer(generated_code)
-    optimized_code = peephole_optimizer.optimize()
     
+    # Saida original MIPS
     with open("output_code.txt", "w") as code_file:
-        code_file.write(optimized_code)
+        code_file.write(generated_code)
     
-    #binary_code = convert_to_binary(optimized_code)
+    # Codigo MIPS otimizado
+    otimizador = OtimizadorMIPS()
+    codigo_otimizado = otimizador.otimizar(generated_code)
     
-    #with open("output_code.bin", "w") as binary_file:
-    #    binary_file.write(binary_code)
+    with open('optimized_code.txt', 'w') as f:
+        f.write(codigo_otimizado)
+
+    # Codigo de maquina
+    assembler = MIPSAssembler()
+    machine_code = assembler.assemble_file('optimized_code.txt')
+
+    with open('output.bin', 'wb') as f:
+        for code in machine_code:
+            f.write(code.to_bytes(4, byteorder='big'))

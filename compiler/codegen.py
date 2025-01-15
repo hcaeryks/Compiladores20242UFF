@@ -50,17 +50,8 @@ class CodeGen():
         self.current_scope_max_offset[self.current_scope] = 0
         self.variables[self.current_scope] = {}
         self.text_section.append("\nmain:")
-        self.text_section.append("\tsw $fp, 0($sp)")
-        self.text_section.append("\tmove $fp, $sp")
-        self.text_section.append("\tsw $ra, -4($sp)")
-        self.text_section.append("\taddiu $sp, $sp, -8")
-        
         for child in tree.children[2:]:
             self._cgen(child)
-        
-        self.text_section.append("\tlw $ra, -4($fp)")
-        self.text_section.append("\tmove $sp, $fp")
-        self.text_section.append("\tlw $fp, 0($fp)")
         self.text_section.append("\tli $v0, 10")
         self.text_section.append("\tsyscall")
 
@@ -74,11 +65,11 @@ class CodeGen():
     def assemble_VAR(self, tree: Node) -> None:
         for child in tree.children[1::2]:
             name = child.children[0]
+            # checa se ta numa classe ou numa função
             if len(self.current_scope.split('.')) > 1:
-                self.current_scope_max_offset[self.current_scope] -= 4
-                offset = self.current_scope_max_offset[self.current_scope]
-                self.variables[self.current_scope.split('.')[0]][self.current_scope.split('.')[1]][name] = offset
+                self.variables[self.current_scope.split('.')[0]][self.current_scope.split('.')[1]][name] = self.current_scope_max_offset[self.current_scope]
                 self.text_section.append(f"\taddiu $sp, $sp, -4")
+                self.current_scope_max_offset[self.current_scope] -= 4
             else:    
                 self.variables[self.current_scope][name] = self.current_scope_max_offset[self.current_scope]
                 self.data_section.append(f"{name}: .word 0")
@@ -88,9 +79,9 @@ class CodeGen():
         i = 0
         for child in tree.children[1::2]:
             name = child.children[0]
-            offset = 4 + (i * 4)
-            self.variables[self.current_scope.split('.')[0]][self.current_scope.split('.')[1]][name] = offset
-            self.text_section.append(f"\tlw $a0, {offset}($fp)")
+            self.current_scope_max_offset_params[self.current_scope] += 4
+            self.variables[self.current_scope.split('.')[0]][self.current_scope.split('.')[1]][name] = self.current_scope_max_offset_params[self.current_scope]
+            self.text_section.append(f"\tlw $a{i}, {self.current_scope_max_offset_params[self.current_scope]}($fp)")
             i += 1
 
     def assemble_METODO(self, tree: Node) -> None:
@@ -98,26 +89,26 @@ class CodeGen():
         self.variables[self.current_scope][metodo_name] = {}
         self.current_scope = f"{self.current_scope}.{metodo_name}"
         self.current_scope_max_offset_params[self.current_scope] = 0
-        self.current_scope_max_offset[self.current_scope] = -8
-        
+        self.current_scope_max_offset[self.current_scope] = 0
         self.text_section.append(f"{self.current_scope}:")
-        self.text_section.append("\tsw $fp, 0($sp)")
         self.text_section.append("\tmove $fp, $sp")
-        self.text_section.append("\tsw $ra, -4($sp)")
-        self.text_section.append("\taddiu $sp, $sp, -12")
+
+        self.text_section.append("\tsw $ra, 0($sp)")
+        self.text_section.append("\taddiu $sp, $sp, -4")
 
         for child in tree.children[2:]:
             self._cgen(child)
 
-        self.text_section.append("\tmove $v0, $a0")
-        self.text_section.append("\tlw $ra, -4($fp)")
-        self.text_section.append("\tmove $sp, $fp")
-        self.text_section.append("\tlw $fp, 0($fp)")
+        # saindo do metodo
+        self.text_section.append("\tlw $ra, 4($sp)")
+        self.text_section.append(f"\taddiu $sp, $sp, {self.current_scope_max_offset_params[self.current_scope]+8}")
+        self.text_section.append("\tlw $fp, 0($sp)")
         self.text_section.append("\tjr $ra")
 
     def assemble_CMD(self, tree: Node) -> None:
         if tree.children[0].label == "System.out.println":
             self._cgen(tree.children[0].children[0])
+            #self.text_section.append("\tmove $a0, $v0")
             self.text_section.append("\tli $v0, 1")
             self.text_section.append("\tsyscall")
         elif tree.children[0].label == "CMD":
@@ -223,9 +214,7 @@ class CodeGen():
         self._cgen(tree.children[0])
         self.text_section.append("\tsw $a0, 0($sp)")
         self.text_section.append("\taddiu $sp, $sp, -4")
-        
         self._cgen(tree.children[2])
-        
         self.text_section.append("\tlw $t1, 4($sp)")
         self.text_section.append("\tmul $a0, $t1, $a0")
         self.text_section.append("\taddiu $sp, $sp, 4")
@@ -246,7 +235,6 @@ class CodeGen():
     def assemble_PEXP(self, tree: Node) -> None:
         if len(tree.children) == 1 and tree.children[0].label == "PEXP":
             self._cgen(tree.children[0])
-            return
         
         if tree.children[0].label == "identifier" and len(tree.children) == 2:
             base = self.arrays[tree.children[0].children[0]]
@@ -259,40 +247,27 @@ class CodeGen():
         
         if tree.type == "method_call":
             whereweat = None
-            if len(tree.children[0].children) == 1:  # caso this
+            if len(tree.children[0].children) == 1: # caso this
                 whereweat = self.current_scope.split('.')[0]
-            else:  # caso new
+            else: # caso new
                 whereweat = tree.children[0].children[1].children[0]
             funcname = tree.children[1].children[0]
             path = f"{whereweat}.{funcname}"
-            
-            self.text_section.append("\tsw $a0, 0($sp)")
+            self.text_section.append("\tsw $fp, 0($sp)")
             self.text_section.append("\taddiu $sp, $sp, -4")
-            
             for child in tree.children[-1].children[::-1]:
                 self._cgen(child)
                 self.text_section.append("\tsw $a0, 0($sp)")
                 self.text_section.append("\taddiu $sp, $sp, -4")
-            
+
             self.text_section.append("\tjal " + path)
-            
-            if tree.children[-1].children:
-                self.text_section.append(f"\taddiu $sp, $sp, {4 * len(tree.children[-1].children)}")
-            
-            self.text_section.append("\tmove $a0, $v0")
-            
-            self.text_section.append("\tlw $t1, 4($sp)")
-            self.text_section.append("\taddiu $sp, $sp, 4")
-            self.text_section.append("\tsw $t1, 0($sp)")
-            self.text_section.append("\taddiu $sp, $sp, -4")
 
     def assemble_REXP(self, tree: Node) -> None:
         self._cgen(tree.children[0])
         self.text_section.append("\tsw $a0, 0($sp)")
         self.text_section.append("\taddiu $sp, $sp, -4")
-        
+
         self._cgen(tree.children[2])
-        
         self.text_section.append("\tlw $t1, 4($sp)")
         if tree.children[1].children[0] == "<":
             self.text_section.append("\tslt $a0, $t1, $a0")
@@ -301,7 +276,3 @@ class CodeGen():
         elif tree.children[1].children[0] == "!=":
             self.text_section.append("\tsne $a0, $t1, $a0")
         self.text_section.append("\taddiu $sp, $sp, 4")
-
-    def assemble_RETURN(self, tree: Node) -> None:
-        self._cgen(tree.children[0])
-        self.text_section.append("\tmove $v0, $a0")

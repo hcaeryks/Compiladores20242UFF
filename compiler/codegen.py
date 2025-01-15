@@ -185,7 +185,6 @@ class CodeGen():
             else:
                 self.text_section.append(f"\tsw $a0, {self.variables[self.current_scope][name]}")
         
-
     def assemble_identifier(self, tree: Node) -> None:
         name = tree.children[0]
         scope_to_use = self.current_scope if self.instancescope == None else self.instancescope
@@ -209,6 +208,8 @@ class CodeGen():
         elif tree.children[0].label == "number":
             val = tree.children[0].children[0]
             self.text_section.append(f"\tli $a0, {val}")
+        elif tree.children[0].children[0] == "null":
+            self.text_section.append("\tmove $a0, $zero")
         else:
             self._cgen(tree.children[0])
 
@@ -249,10 +250,6 @@ class CodeGen():
         self.text_section.append("\taddiu $sp, $sp, 4")
 
     def assemble_PEXP(self, tree: Node) -> None:
-        if len(tree.children) == 1 and tree.children[0].label == "PEXP":
-            self._cgen(tree.children[0])
-            return
-
         if tree.type == "array_length":
             base = self.arrays[tree.children[0].children[0]]
             self.text_section.append(f"\tlw $a0, 0($t{base})")
@@ -296,6 +293,10 @@ class CodeGen():
             self.text_section.append("\taddiu $sp, $sp, 4")
             self.text_section.append("\tsw $t1, 0($sp)")
             self.text_section.append("\taddiu $sp, $sp, -4")
+
+        if len(tree.children) == 1:
+            self._cgen(tree.children[0])
+            return
 
     def assemble_REXP(self, tree: Node) -> None:
         self._cgen(tree.children[0])

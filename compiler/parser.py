@@ -286,7 +286,7 @@ class Parser():
                 if self.get_token().value == ".":
                     self.consume("punctuation", ".")
                     if self.get_token().value == "length":
-                        self.consume("identifier", "length")
+                        self.consume("reserved", "length")
                         pexp = Node("PEXP", [pexp], "array_length")
                     else:
                         identifier = Node("identifier", [self.consume("identifier").value])

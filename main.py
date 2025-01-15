@@ -2,10 +2,12 @@ from compiler import Lexer, Parser, Semantic, CodeGen
 from compiler.MIPSAssembler import MIPSAssembler
 from compiler.OtimizadorMIPS import OtimizadorMIPS
 from compiler.types import Node
-from graphviz import Digraph
+#from graphviz import Digraph
 import os
 
 OUT_FOLDER = "./out/"
+if not os.path.exists(OUT_FOLDER):
+    os.makedirs(OUT_FOLDER)
 
 def visualize_tree(node: Node, graph=None, parent=None):
     if graph is None:
@@ -37,8 +39,8 @@ if __name__ == "__main__":
     parser = Parser(lexer.get_tokens())
     tree = parser.parse()
 
-    graph = visualize_tree(tree)
-    graph.render(os.path.join(OUT_FOLDER, "aas"), format="png", cleanup=True)
+    #graph = visualize_tree(tree)
+    #graph.render(os.path.join(OUT_FOLDER, "aas"), format="png", cleanup=True)
 
     semantic = Semantic(tree)
     semantic.validate_all()

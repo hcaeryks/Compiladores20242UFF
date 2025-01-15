@@ -11,6 +11,6 @@ class Calculator {
         c[0] = a;
         c[1] = b;
         c[2] = c[0] + c[1];
-        return c[2] + c[0] + c.length;
+        return c[2] + c[0] + (c.length * 2);
     }
 }

@@ -54,21 +54,42 @@ class Semantic():
 
     def build_method_info(self, prog_node: Node) -> None:
         """Build method information for all classes"""
+        print("Starting build_method_info")  # Debug print
+        
+        # First, ensure class_methods is initialized for all classes
         for child in prog_node.children:
-            if child and child.label == "CLASSE":  # Add check for None
+            if child and child.label == "CLASSE":
                 class_name = child.children[0].children[0]
-                # Find all methods in the class
+                if class_name not in self.class_methods:
+                    self.class_methods[class_name] = {}
+                print(f"Found class: {class_name}")  # Debug print
+        
+        # Then collect method information
+        for child in prog_node.children:
+            if child and child.label == "CLASSE":
+                class_name = child.children[0].children[0]
+                print(f"Processing methods for class: {class_name}")  # Debug print
+                
+                # Find all methods in the class body
                 for node in child.children:
-                    if node and node.label == "METODO":  # Add check for None
+                    if node and node.label == "METODO":
                         method_name = node.children[1].children[0]
+                        print(f"Found method: {method_name}")  # Debug print
+                        
                         # Get parameter information
                         params = []
                         if len(node.children) > 2 and node.children[2].label == "PARAMS":
-                            params = node.children[2].children
+                            params = [p for p in node.children[2].children if p.label == "identifier"]
+                        
                         self.class_methods[class_name][method_name] = {
-                            'params': len(params) // 2,  # Each param has type and name
+                            'params': len(params),
                             'node': node
                         }
+                        print(f"Method {method_name} in class {class_name} has {len(params)} parameters")  # Debug print
+        
+        print("class_methods contents:")  # Debug print
+        for class_name, methods in self.class_methods.items():
+            print(f"{class_name}: {methods.keys()}")
 
     
     def dfs(self, node: Node, validate_variables: bool, validate_functions: bool, replace_constants: bool, owned_by: str = "") -> None:
@@ -79,7 +100,10 @@ class Semantic():
             for id in node.get_identifiers():
                 self.variables[id['name']] = id
                 self.variables[id['name']]['owned_by'] = owned_by
-            
+                # Ensure the variable has type information
+                if 'type' not in self.variables[id['name']]:
+                    self.variables[id['name']]['type'] = self.infer_type(id)
+                
         if validate_variables: self.validate_variable_declaration(node, owned_by)
         if validate_functions: self.validate_function_calls(node)
 
@@ -92,56 +116,102 @@ class Semantic():
 
         if replace_constants: self.replace_constants(node)
 
+    def infer_type(self, id: dict) -> str:
+        """
+        Infer the type of a variable based on its context and usage.
+        """
+        # Placeholder logic for type inference
+        # This should be replaced with actual logic based on your language's type system
+
+        # Example: Infer type based on variable name or initial value
+        if 'value' in id:
+            value = id['value']
+            if isinstance(value, int):
+                return "int"
+            elif isinstance(value, float):
+                return "float"
+            elif isinstance(value, bool):
+                return "boolean"
+            elif isinstance(value, str):
+                return "string"
+        
+        # Default to int if no other information is available
+        return "int"
+
+
     def validate_variable_declaration(self, node: Node, owned_by: str = "") -> None:
         for id in node.get_identifiers():
             if id['name'] not in self.variables:
                 raise Exception(f"Tried using variable {id['name']} before declaration")
-            #elif self.variables[id['name']]['owned_by'] not in self.extends[owned_by]:
-            #    raise Exception(f"Variable {id['name']} is not declared in the current scope")
+            else:
+                # Ensure the variable has type information
+                if 'type' not in self.variables[id['name']]:
+                    raise Exception(f"Variable {id['name']} does not have a type information")
 
     def validate_function_calls(self, node: Node) -> None:
         if node.label == "PEXP" and node.type == "method_call":
             method_name = node.children[-2].children[0]
             params = node.children[-1].children
+            
+            print(f"\nValidating method call: {method_name}")
+            print(f"Parameters: {len(params)}")
 
             # Find the class context
             class_context = None
-            if len(node.children[0].children) == 1:  # this case
-                current_scope = self.get_current_scope(node)
-                if current_scope:
-                    class_context = current_scope
-            else:  # new Class() case or method call on variable
-                if node.children[0].label == "PEXP":
-                    if (node.children[0].children[0].label == "reserved" and 
-                        node.children[0].children[0].children[0] == "new"):
-                        # Handle case of new Class().method()
-                        class_context = node.children[0].children[1].children[0]
-                elif node.children[0].label == "identifier":
-                    # Handle case of variable.method()
-                    var_name = node.children[0].children[0]
-                    if var_name in self.variables:
-                        class_context = self.variables[var_name]['type']
-                    else:
-                        # If not found in variables, check if it's a class name
-                        class_context = var_name
+            
+            # Get first child node for analysis
+            first_child = node.children[0]
+            print(f"First child: {first_child.label}")  # Debug print
 
-            if not class_context:
-                class_context = node.children[0].children[0]  # Fallback to first child
+            # Case 1: Method call on new instance (new Calculator())
+            if hasattr(first_child, 'children') and len(first_child.children) > 1:
+                if (first_child.children[0].label == "reserved" and 
+                    first_child.children[0].children[0] == "new"):
+                    class_context = first_child.children[1].children[0]
+                    print(f"Found new instance of class: {class_context}")  # Debug print
+            
+            # Case 2: Method call using 'this'
+            elif (hasattr(first_child, 'children') and 
+                len(first_child.children) == 1 and 
+                isinstance(first_child.children[0], Node) and
+                first_child.children[0].label == "reserved" and 
+                first_child.children[0].children[0] == "this"):
+                class_context = self.get_current_scope(node)
+                print(f"Found this reference in class: {class_context}")  # Debug print
+            
+            # Case 3: Method call on variable
+            elif first_child.label == "identifier":
+                var_name = first_child.children[0]
+                # Get class context from current scope if variable type not found
+                class_context = self.get_current_scope(node)
+                print(f"Found variable reference: {var_name} in class: {class_context}")  # Debug print
+
+                # Check if the variable is an instance of a class
+                if var_name in self.variables:
+                    var_info = self.variables[var_name]
+                    if 'type' in var_info:
+                        class_context = var_info['type']
+                        print(f"Variable {var_name} is of type: {class_context}")  # Debug print
+                    else:
+                        raise Exception(f"Variable {var_name} does not have a type information")
 
             if not class_context:
                 raise Exception(f"Cannot determine class context for method {method_name}")
+
+            print(f"Final class context: {class_context}")  # Debug print
 
             # Check method in current class and parent classes
             method_found = False
             classes_to_check = [class_context] + self.extends.get(class_context, [])
             
             for class_name in classes_to_check:
-                if class_name in self.class_methods and method_name in self.class_methods[class_name]:
-                    method_found = True
-                    expected_params = self.class_methods[class_name][method_name]['params']
-                    if len(params) != expected_params:
-                        raise Exception(f"Invalid number of parameters for method {method_name}. Expected {expected_params}, got {len(params)}")
-                    break
+                if class_name in self.class_methods:
+                    if method_name in self.class_methods[class_name]:
+                        method_found = True
+                        expected_params = self.class_methods[class_name][method_name]['params']
+                        if len(params) != expected_params:
+                            raise Exception(f"Invalid number of parameters for method {method_name}. Expected {expected_params}, got {len(params)}")
+                        break
 
             if not method_found:
                 raise Exception(f"Method {method_name} not found in class {class_context} or its parent classes")

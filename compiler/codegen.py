@@ -16,8 +16,71 @@ class CodeGen():
         self.arrays = {}
         self.arrays_size = {}
         self.next_array_register = 3
+        self.class_hierarchy = {}  # class names -> parent class names
+        self.inherited_methods = {}  # class names -> inherited methods
+        self.inherited_variables = {} # class names -> inherited variables
+
+    def build_inheritance_tree(self):
+        """Build the inheritance tree from the AST"""
+        for child in self.tree.children:
+            if child.label == "CLASSE":
+                class_name = child.children[0].children[0]
+                parent_node = child.children[1]
+                parent_name = parent_node.children[0] if parent_node else None
+                
+                self.class_hierarchy[class_name] = parent_name
+                self.inherited_methods[class_name] = {}
+                self.inherited_variables[class_name] = {}
+                
+                if parent_name:
+                    # Copiar metodos e variaveis da parent class
+                    self._copy_inherited_members(class_name, parent_name)
+    
+    def _copy_inherited_members(self, child_class: str, parent_class: str):
+        """Copy inherited methods and variables from parent to child class"""
+        # Copy parent's methods
+        if parent_class in self.variables:
+            for method_name, method_info in self.variables[parent_class].items():
+                if isinstance(method_info, dict):  # It's a method
+                    self.inherited_methods[child_class][method_name] = {
+                        'parent': parent_class,
+                        'offset': method_info
+                    }
+
+            # Copy parent's variables
+            for var_name, var_offset in self.variables[parent_class].items():
+                if not isinstance(var_offset, dict):  # It's a variable
+                    self.inherited_variables[child_class][var_name] = {
+                        'parent': parent_class,
+                        'offset': var_offset
+                    }
+
+        # Recursively copy from grandparent if exists
+        if parent_class in self.class_hierarchy and self.class_hierarchy[parent_class]:
+            self._copy_inherited_members(child_class, self.class_hierarchy[parent_class])
+    
+    def _resolve_method(self, class_name: str, method_name: str) -> str:
+        """Resolve method to the correct class in the inheritance chain"""
+        current_class = class_name
+        while current_class:
+            # Check if method exists in current class
+            if (current_class in self.variables and 
+                method_name in self.variables[current_class]):
+                return f"{current_class}.{method_name}"
+            
+            # Check inherited methods
+            if (current_class in self.inherited_methods and 
+                method_name in self.inherited_methods[current_class]):
+                parent_class = self.inherited_methods[current_class][method_name]['parent']
+                return f"{parent_class}.{method_name}"
+            
+            # Move up the inheritance chain
+            current_class = self.class_hierarchy.get(current_class)
+            
+        return f"{class_name}.{method_name}"  # Fallback to original class
 
     def generate_code(self) -> str:
+        self.build_inheritance_tree()
         self._cgen(self.tree)
         main_index = next((i for i, line in enumerate(self.text_section) if line.strip() == "main:"), None)
         if main_index is not None:
@@ -64,8 +127,25 @@ class CodeGen():
         self.text_section.append("\tsyscall")
 
     def assemble_CLASSE(self, tree: Node) -> None:
+        """Modified CLASSE assembly to handle inheritance"""
         self.current_scope = f"{tree.children[0].children[0]}"
         self.variables[self.current_scope] = {}
+        
+        # Handle inheritance
+        parent_node = tree.children[1]
+        if parent_node:
+            parent_name = parent_node.children[0]
+            self.class_hierarchy[self.current_scope] = parent_name
+            
+            # Initialize inheritance tracking for this class
+            if self.current_scope not in self.inherited_methods:
+                self.inherited_methods[self.current_scope] = {}
+            if self.current_scope not in self.inherited_variables:
+                self.inherited_variables[self.current_scope] = {}
+            
+            # Copy inherited members
+            self._copy_inherited_members(self.current_scope, parent_name)
+
         self.text_section.append(f"\n{self.current_scope}:")
         for child in tree.children[2:]:
             self._cgen(child)
@@ -271,8 +351,10 @@ class CodeGen():
                 whereweat = self.current_scope.split('.')[0]
             else:  # caso new
                 whereweat = tree.children[0].children[1].children[0]
+            
             funcname = tree.children[1].children[0]
-            path = f"{whereweat}.{funcname}"
+            # Use method resolution
+            path = self._resolve_method(whereweat, funcname)
             
             self.text_section.append("\tsw $a0, 0($sp)")
             self.text_section.append("\taddiu $sp, $sp, -4")

@@ -115,7 +115,7 @@ class CodeGen():
         self.text_section.append("\tmove $sp, $fp")
         self.text_section.append("\tlw $fp, 0($fp)")
         self.text_section.append("\tjr $ra")
-        self.current_scope = f"{self.current_scope}"
+        self.current_scope = f"{self.current_scope.split('.')[0]}"
 
     def assemble_CMD(self, tree: Node) -> None:
         if tree.children[0].label == "System.out.println":

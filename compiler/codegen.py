@@ -2,8 +2,9 @@ from .types import Node
 import re
 
 class CodeGen():
-    def __init__(self, tree: Node) -> None:
+    def __init__(self, tree: Node, deps: list) -> None:
         self.tree = tree
+        self.deps = deps
         self.data_section = []
         self.text_section = []
         self.additional_section = []
@@ -40,6 +41,7 @@ class CodeGen():
             self.yield_error(f"assemble_{tree.label} function not found", tree)
 
     def assemble_PROG(self, tree: Node) -> None:
+        old_child_name = None
         for child in tree.children:
             self._cgen(child)
     
@@ -94,7 +96,7 @@ class CodeGen():
 
     def assemble_METODO(self, tree: Node) -> None:
         metodo_name = tree.children[1].children[0]
-        self.variables[self.current_scope][metodo_name] = {}
+        self.variables[self.current_scope.split('.')[0]][metodo_name] = {}
         self.current_scope = f"{self.current_scope}.{metodo_name}"
         self.current_scope_max_offset_params[self.current_scope] = 0
         self.current_scope_max_offset[self.current_scope] = -8
@@ -113,6 +115,7 @@ class CodeGen():
         self.text_section.append("\tmove $sp, $fp")
         self.text_section.append("\tlw $fp, 0($fp)")
         self.text_section.append("\tjr $ra")
+        self.current_scope = f"{self.current_scope}"
 
     def assemble_CMD(self, tree: Node) -> None:
         if tree.children[0].label == "System.out.println":

@@ -26,7 +26,7 @@ def visualize_tree(node: Node, graph=None, parent=None):
     return graph
 
 if __name__ == "__main__":
-    with open("./inputs/exemplo_4.txt", "r") as file:
+    with open("./inputs/exemplo_5.txt", "r") as file:
         text = file.read()
     
     lexer = Lexer(text)
@@ -43,9 +43,9 @@ if __name__ == "__main__":
     #graph.render(os.path.join(OUT_FOLDER, "aas"), format="png", cleanup=True)
 
     semantic = Semantic(tree)
-    semantic.validate_all()
+    tree, deps = semantic.validate_all()
 
-    codegen = CodeGen(tree)
+    codegen = CodeGen(tree, deps)
     generated_code = codegen.generate_code()
     
     # Saida original MIPS

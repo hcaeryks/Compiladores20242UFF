@@ -1,0 +1,25 @@
+class Main {
+    public static void main(String[] args) {
+        System.out.println(new Calculator3().add3(10, 20));
+        System.out.println(new Calculator3().add2(10, 20));
+        System.out.println(new Calculator3().add(10, 20));
+    }
+}
+
+class Calculator3 extends Calculator2 {
+    public int add3(int e, int f) {
+        return e + f + 2;
+    }
+}
+
+class Calculator2 extends Calculator {
+    public int add2(int c, int d) {
+        return c + d + 1;
+    }
+}
+
+class Calculator {
+    public int add(int a, int b) {
+        return a + b;
+    }
+}

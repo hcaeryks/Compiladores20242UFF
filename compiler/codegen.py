@@ -268,7 +268,7 @@ class CodeGen():
             funcname = tree.children[1].children[0]
             if len(tree.children[0].children) == 1:  # caso this
                 whereweat = self.current_scope.split('.')[0]
-                funcname = tree.children[0].children[0]
+                funcname = tree.children[1].children[0]
             else:  # caso new
                 whereweat = tree.children[0].children[1].children[0]
             path = f"{whereweat}.{funcname}"

@@ -19,7 +19,8 @@ class MIPSAssembler:
             'beq':   0x4,
             'li':    0x8,
             'lw':    0x23,
-            'sw':    0x2b
+            'sw':    0x2b,
+            'lui':   0xf
         }
 
         # J-type
@@ -31,6 +32,7 @@ class MIPSAssembler:
         self.pseudo_instructions = {
             'move': 'add {}, $zero, {}',  # move rd, rs -> add rd, $zero, rs
             'b': 'beq $zero, $zero, {}',  # b label -> beq $zero, $zero, label
+            'la': 'addiu {}, $zero, {}',  # la rd, label -> addiu rd, $zero, label (simplificado para endereços pequenos)
         }
         
         # Mapa de registers
@@ -85,6 +87,8 @@ class MIPSAssembler:
                 return self.pseudo_instructions[op].format(parts[1], parts[2])
             elif op == 'b':
                 return self.pseudo_instructions[op].format(parts[1])
+            elif op == 'la':
+                return self.pseudo_instructions[op].format(parts[1], parts[2])
         return line
 
     def first_pass(self, lines):

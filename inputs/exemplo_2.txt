@@ -6,6 +6,8 @@ class Main {
 
 class Calculator {
     public int add(int a, int b) {
+        a = a + 0;
+        a = a * 1;
         return a + b;
     }
 }

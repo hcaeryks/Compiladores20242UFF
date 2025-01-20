@@ -47,6 +47,7 @@ class OtimizadorMIPS:
         instrucoes = self.remover_codigo_morto(instrucoes)
         instrucoes = self.dobramento_constantes(instrucoes)
         instrucoes = self.reducao_forca(instrucoes)
+        instrucoes = self.remover_operacoes_redundantes(instrucoes)
         instrucoes = self.remover_movimentacoes_redundantes(instrucoes)
         instrucoes = self.remover_instrucoes_nop(instrucoes)
         
@@ -109,6 +110,64 @@ class OtimizadorMIPS:
                 
         return codigo_vivo
 
+    def remover_operacoes_redundantes(self, instrucoes):
+        """Remove operações redundantes como multiplicação por 1 e adição com 0"""
+        otimizado = []
+        i = 0
+        
+        while i < len(instrucoes):
+            if i + 2 >= len(instrucoes):  # Se não houver instruções suficientes para formar o padrão
+                otimizado.append(instrucoes[i])
+                i += 1
+                continue
+                
+            instr1 = self.analisar_instrucao(instrucoes[i])
+            instr2 = self.analisar_instrucao(instrucoes[i+1])
+            instr3 = self.analisar_instrucao(instrucoes[i+2])
+            
+            # Se alguma das instruções não for válida, continue normalmente
+            if not instr1 or not instr2 or not instr3:
+                otimizado.append(instrucoes[i])
+                i += 1
+                continue
+                
+            # Verifica se é um padrão de multiplicação por 1
+            if (instr1['tipo'] == 'instrucao' and instr1['op'] == 'li' and
+                instr2['tipo'] == 'instrucao' and instr2['op'] == 'lw' and
+                instr3['tipo'] == 'instrucao' and instr3['op'] == 'mul'):
+                
+                # Verifica se está carregando 1 e multiplicando pelo valor carregado
+                if (len(instr1['args']) == 2 and instr1['args'][1] == '1' and
+                    len(instr3['args']) == 3 and
+                    (instr3['args'][2] == instr1['args'][0] or instr3['args'][1] == instr1['args'][0])):
+                    
+                    # Mantém apenas o lw, ajustando o registrador de destino
+                    novo_lw = f"lw {instr3['args'][0]}, {instr2['args'][1]}"
+                    otimizado.append(novo_lw)
+                    i += 3
+                    continue
+                    
+            # Verifica se é um padrão de adição com 0
+            if (instr1['tipo'] == 'instrucao' and instr1['op'] == 'li' and
+                instr2['tipo'] == 'instrucao' and instr2['op'] == 'lw' and
+                instr3['tipo'] == 'instrucao' and instr3['op'] == 'add'):
+                
+                # Verifica se está carregando 0 e somando com o valor carregado
+                if (len(instr1['args']) == 2 and instr1['args'][1] == '0' and
+                    len(instr3['args']) == 3 and
+                    (instr3['args'][2] == instr1['args'][0] or instr3['args'][1] == instr1['args'][0])):
+                    
+                    # Mantém apenas o lw, ajustando o registrador de destino
+                    novo_lw = f"lw {instr3['args'][0]}, {instr2['args'][1]}"
+                    otimizado.append(novo_lw)
+                    i += 3
+                    continue
+            
+            otimizado.append(instrucoes[i])
+            i += 1
+            
+        return otimizado    
+    
     def dobramento_constantes(self, instrucoes):
         """Realiza dobramento de constantes"""
         otimizado = []

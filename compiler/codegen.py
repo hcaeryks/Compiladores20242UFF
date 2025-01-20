@@ -5,7 +5,7 @@ class CodeGen():
     def __init__(self, tree: Node, deps: list) -> None:
         self.tree = tree
         self.deps = deps
-        self.data_section = []
+        self.data_section = ['newline: .asciiz "\\n"']
         self.text_section = []
         self.additional_section = []
         self.variables = {}
@@ -121,6 +121,11 @@ class CodeGen():
         if tree.children[0].label == "System.out.println":
             self._cgen(tree.children[0].children[0])
             self.text_section.append("\tli $v0, 1")
+            self.text_section.append("\tsyscall")
+
+            # pra printar direitinho
+            self.text_section.append("\tli $v0, 4")
+            self.text_section.append("\tla $a0, newline")
             self.text_section.append("\tsyscall")
         elif tree.children[0].label == "CMD":
             for child in tree.children:
@@ -258,23 +263,14 @@ class CodeGen():
             self.text_section.append(f"\tlw $a0, 0($t{base})")
             return
 
-        if tree.children[0].label == "identifier" and len(tree.children) == 2:
-            base = self.arrays[tree.children[0].children[0]]
-            self._cgen(tree.children[1])
-            self.text_section.append("\tadd $a0, $a0, $a0")
-            self.text_section.append("\tadd $a0, $a0, $a0")
-            self.text_section.append("\taddiu $a0, $a0, 4")
-            self.text_section.append(f"\tadd $t0, $a0, $t{base}")
-            self.text_section.append("\tlw $a0, 0($t0)")
-            return
-
         if tree.type == "method_call":
             whereweat = None
+            funcname = tree.children[1].children[0]
             if len(tree.children[0].children) == 1:  # caso this
                 whereweat = self.current_scope.split('.')[0]
+                funcname = tree.children[0].children[0]
             else:  # caso new
                 whereweat = tree.children[0].children[1].children[0]
-            funcname = tree.children[1].children[0]
             path = f"{whereweat}.{funcname}"
             
             self.text_section.append("\tsw $a0, 0($sp)")
@@ -296,7 +292,18 @@ class CodeGen():
             self.text_section.append("\taddiu $sp, $sp, 4")
             self.text_section.append("\tsw $t1, 0($sp)")
             self.text_section.append("\taddiu $sp, $sp, -4")
+            return
 
+        if tree.children[0].label == "identifier" and len(tree.children) == 2:
+            base = self.arrays[tree.children[0].children[0]]
+            self._cgen(tree.children[1])
+            self.text_section.append("\tadd $a0, $a0, $a0")
+            self.text_section.append("\tadd $a0, $a0, $a0")
+            self.text_section.append("\taddiu $a0, $a0, 4")
+            self.text_section.append(f"\tadd $t0, $a0, $t{base}")
+            self.text_section.append("\tlw $a0, 0($t0)")
+            return
+        
         if len(tree.children) == 1:
             self._cgen(tree.children[0])
             return

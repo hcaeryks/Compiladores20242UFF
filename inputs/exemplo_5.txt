@@ -8,7 +8,7 @@ class Main {
 
 class Calculator3 extends Calculator2 {
     public int add3(int e, int f) {
-        return e + f + 2;
+        return e + f + 2 + add(10, 10);
     }
 }
 

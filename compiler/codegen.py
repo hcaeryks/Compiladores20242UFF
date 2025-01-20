@@ -258,6 +258,7 @@ class CodeGen():
         self.text_section.append("\taddiu $sp, $sp, 4")
 
     def assemble_PEXP(self, tree: Node) -> None:
+        print(f"DEBUG: PEXP node structure: {tree}")
         if tree.type == "array_length":
             base = self.arrays[tree.children[0].children[0]]
             self.text_section.append(f"\tlw $a0, 0($t{base})")

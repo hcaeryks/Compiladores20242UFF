@@ -314,7 +314,8 @@ class Parser():
                 self.consume("punctuation", "(")
                 exps = self.parse_EXPS() if self.get_token().value != ")" else Node("EXPS", [])
                 self.consume("punctuation", ")")
-                return Node("PEXP", [identifier, exps], "method_call")
+                # Adicionar Node "this" implícito para chamadas de método simples
+                return Node("PEXP", [Node("PEXP", [Node("reserved", ["this"])]), identifier, exps], "method_call")
             return identifier
         elif token.token_type == "number":
             self.index += 1
